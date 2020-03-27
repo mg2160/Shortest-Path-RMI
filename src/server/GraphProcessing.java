@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.ArrayList;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class GraphProcessing extends UnicastRemoteObject implements GraphProcessingI{
 
@@ -15,9 +16,8 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 	private static final int QUERY_ARGUMENTS_LENGTH = 3;
 
 
-
-	public ArrayList<Integer> edges[] = new ArrayList<>()[MAX_GRAPH_NODES_SIZE];
-	boolean mask[] = new boolean[MAX_GRAPH_NODES_SIZE];
+	private ArrayList<Integer> edges[] = new ArrayList<>()[MAX_GRAPH_NODES_SIZE];
+	private boolean nodesSet[] = new boolean[MAX_GRAPH_NODES_SIZE];
 
 	protected GraphProcessing() throws RemoteException {
 		super();
@@ -37,8 +37,8 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 			int source = Integer.parseInt(instruction[0]);
 			int destination = Integer.parseInt(instruction[1]);
 			addEdge(source-1, destination-1);
-			mask[source-1]=true;
-			mask[destination-1]=true;
+			nodesSet[source-1]=true;
+			nodesSet[destination-1]=true;
 		}
 	}
 
@@ -61,10 +61,10 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 			int execDest = Integer.parseInt(batchLine[2]);
 			//System.out.println("Before");
 			if(operation == 'Q') {
-				if(mask[execSrc-1]==false || mask[execDest-1]==false) {
+				if(nodesSet[execSrc-1]==false || nodesSet[execDest-1]==false) {
 					addEdge(execSrc-1, execDest-1);
-					mask[execSrc-1] = true;
-					mask[execDest-1] = true;
+					nodesSet[execSrc-1] = true;
+					nodesSet[execDest-1] = true;
 				}
 				int shortestPath = query(execSrc-1,execDest-1);
 				if(shortestPath==0) {
@@ -74,16 +74,16 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 				}
 			} else if (operation == 'A') {
 				addEdge(execSrc-1, execDest-1);
-				mask[execSrc-1] = true;
-				mask[execDest-1] = true;
+				nodesSet[execSrc-1] = true;
+				nodesSet[execDest-1] = true;
 				
 			} else if (operation == 'D') {
 				deleteEdge(execSrc-1, execDest-1);
 				if(edges[execSrc-1].size()==0) {
-					mask[execSrc-1] =false;
+					nodesSet[execSrc-1] =false;
 				}
 				if(edges[execDest-1].size()==0) {
-					mask[execDest-1] =false;
+					nodesSet[execDest-1] =false;
 				}
 			} else {
 				throw new UnsupportedOperationException("Unsupported query type: " + operation);
