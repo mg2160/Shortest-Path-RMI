@@ -10,7 +10,11 @@ import java.util.ArrayList;
 
 public class GraphProcessing extends UnicastRemoteObject implements GraphProcessingI{
 
-	public static final MAX_GRAPH_NODES_SIZE = 5000;
+	private static final int MAX_GRAPH_NODES_SIZE = 5000;
+
+	private static final int QUERY_ARGUMENTS_LENGTH = 3;
+
+
 
 	public ArrayList<Integer> edges[] = new ArrayList<>()[MAX_GRAPH_NODES_SIZE];
 	boolean mask[] = new boolean[MAX_GRAPH_NODES_SIZE];
@@ -48,6 +52,10 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 			//System.out.println("Inside for");
 			String string = (String) iterator.next();
 			String[] batchLine = string.split(" ");
+			if (batchLine.length != QUERY_ARGUMENTS_LENGTH) {
+				throw new IllegalArgumentException("Passed wrong format of input.\n" +
+						"Length passed: " + batchLine.length " instead of: " + QUERY_ARGUMENTS_LENGTH);
+			}
 			char operation = batchLine[0].charAt(0);
 			int execSrc = Integer.parseInt(batchLine[1]);
 			int execDest = Integer.parseInt(batchLine[2]);
@@ -77,6 +85,8 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 				if(edges[execDest-1].size()==0) {
 					mask[execDest-1] =false;
 				}
+			} else {
+				throw new UnsupportedOperationException("Unsupported query type: " + operation);
 			}
 		}
 		return outputList;
