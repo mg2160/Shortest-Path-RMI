@@ -6,13 +6,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Vector;
+import java.util.ArrayList;
 
 public class GraphProcessing extends UnicastRemoteObject implements GraphProcessingI{
 
-	public Vector <Integer> edges[] = new Vector[10];
-	boolean mask[] = new boolean[10];
-	
+	public static final MAX_GRAPH_NODES_SIZE = 5000;
+
+	public ArrayList<Integer> edges[] = new ArrayList<>()[MAX_GRAPH_NODES_SIZE];
+	boolean mask[] = new boolean[MAX_GRAPH_NODES_SIZE];
+
 	protected GraphProcessing() throws RemoteException {
 		super();
 		// TODO Auto-generated constructor stub
@@ -23,7 +25,7 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 	public void setGraph(LinkedList<String> graph) throws Exception {
 		// TODO Auto-generated method stub
 		for (int i = 0; i < edges.length; i++) { 
-            edges[i] = new Vector<>(); 
+            edges[i] = new ArrayList<>();
         } 
 		for (Iterator iterator = graph.iterator(); iterator.hasNext();) {
 			String string = (String) iterator.next();
@@ -101,14 +103,14 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 	private int minEdgeBFS( int u, int v, int n) { 
 		// visited[n] for keeping track of visited 
 		// node in BFS 
-		Vector<Boolean> visited = new Vector<Boolean>(n); 
+		ArrayList<Boolean> visited = new ArrayList<Boolean>(n);
 
 		for (int i = 0; i < n; i++) { 
 			visited.addElement(false); 
 		} 
 
 		// Initialize distances as 0 
-		Vector<Integer> distance = new Vector<Integer>(n); 
+		ArrayList<Integer> distance = new ArrayList<Integer>(n);
 
 		for (int i = 0; i < n; i++) { 
 			distance.addElement(0); 
