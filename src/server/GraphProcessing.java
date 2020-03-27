@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class GraphProcessing extends UnicastRemoteObject implements GraphProcessingI{
@@ -17,6 +19,12 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 
 	private static ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
 
+
+	/**
+	 * A mapping of previously source node path to a hashmap taking destination as key and result value
+	 * Source -> < Destination -> Distance of shortest path >
+	 */
+	private static HashMap<Integer, HashMap<Integer, Integer>> dpMap = new HashMap<>();
 
 	private ArrayList<Integer> edges[] = new ArrayList<>()[MAX_GRAPH_NODES_SIZE];
 	private boolean nodesSet[] = new boolean[MAX_GRAPH_NODES_SIZE];
@@ -61,16 +69,25 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 			//System.out.println("Before");
 			if(operation == 'Q') {
 
+
+
 				rwl.readLock.lock();
+
+
 
 				if(nodesSet[execSrc-1]==false || nodesSet[execDest-1]==false) {
 					addEdge(execSrc-1, execDest-1);
 					nodesSet[execSrc-1] = true;
 					nodesSet[execDest-1] = true;
 				}
-				int shortestPath = query(execSrc-1,execDest-1);
+
+				Integer dpResult = lookupDP(execSrc-1, execDest-1);
+
+				int shortestPath = dpResult == null ? shortestPath = query(execSrc-1,execDest-1) : dpResult;
+
 
 				rwl.readLock.unlock();
+
 
 				if(shortestPath==0) {
 					outputList.add(-1);
@@ -79,17 +96,33 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 				}
 			} else if (operation == 'A') {
 
+
+
 				rwl.writeLock.lock();
+
+
+
+				dpMap.clear();
 
 				addEdge(execSrc-1, execDest-1);
 				nodesSet[execSrc-1] = true;
 				nodesSet[execDest-1] = true;
 
+
+
 				rwl.writeLock.unlock();
+
+
 
 			} else if (operation == 'D') {
 
+
+
 				rwl.writeLock.lock();
+
+
+
+				dpMap.clear();
 
 				deleteEdge(execSrc-1, execDest-1);
 				if(edges[execSrc-1].size()==0) {
@@ -99,7 +132,11 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 					nodesSet[execDest-1] =false;
 				}
 
+
+
 				rwl.writeLock.unlock();
+
+
 
 			} else {
 				throw new UnsupportedOperationException("Unsupported query type: " + operation);
@@ -154,13 +191,41 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 				if (visited.elementAt(edges[x].get(i))) 
 					continue; 
 
-				// update distance for i 
-				distance.setElementAt(distance.get(x) + 1,edges[x].get(i)); 
+				distance.setElementAt(distance.get(x) + 1,edges[x].get(i));// update distance for i
+
+				/* Memo in O(1) constant time */
+				memoResult(u, edges[x].get(i), distance.get(x) + 1);
+				memoResult(x, edges[x].get(i), 1);
+
 				Q.add(edges[x].get(i)); 
 				visited.setElementAt(true,edges[x].get(i)); 
 			} 
-		} 
+		}
 		return distance.get(v); 
 	} 
+
+
+	/* Dynamic Programming optimization methods */
+	private void clearDP() {
+		dpMap.clear();
+	}
+
+	/**
+	 * Looks up the dynamic programming memoized result of shortest path distance from source to destination
+	 * if exists.
+	 * If memoization does not exist, returns null.
+	 */
+	private Integer lookupDP(int source, int destination) {
+		HashMap<Integer, Integer> resultMap = dpMap.get(source);
+		return resultMap != null ? resultMap.get(destination) : null;
+	}
+
+	private void memoResult(int source, int destination, int result) {
+		HashMap<Integer, Integer> resultMap = dpMap.getOrDefault(source, new HashMap<>());
+
+		resultMap.put(destination, result);
+
+		dpMap.put(source, resultMap);
+	}
 
 }
