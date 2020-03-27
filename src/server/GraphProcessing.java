@@ -21,13 +21,11 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 
 	protected GraphProcessing() throws RemoteException {
 		super();
-		// TODO Auto-generated constructor stub
 	}
 
 	
 	@Override
 	public void setGraph(LinkedList<String> graph) throws Exception {
-		// TODO Auto-generated method stub
 		for (int i = 0; i < edges.length; i++) { 
             edges[i] = new ArrayList<>();
         } 
@@ -44,7 +42,6 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 
 	@Override
 	public LinkedList<Integer> executeBatch(LinkedList<String> lines) throws Exception {
-		// TODO Auto-generated method stub
 		LinkedList<Integer> outputList = new LinkedList<Integer>();
 		//System.out.println("First element= " + lines.get(0));
 		//System.out.println("Outside for");
@@ -94,7 +91,6 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 	
 
 	private int query(int src, int dest) {
-		// TODO Auto-generated method stub
 		int sp = minEdgeBFS(src, dest, edges.length);
 		return sp;
 	}
@@ -104,7 +100,6 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 	}
 
 	private void deleteEdge(int src , int dest) {
-		// TODO Auto-generated method stub
 		int j=edges[src].indexOf(2);
 		edges[src].remove(j);
 	}
