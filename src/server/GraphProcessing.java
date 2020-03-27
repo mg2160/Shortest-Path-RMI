@@ -15,6 +15,8 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 
 	private static final int QUERY_ARGUMENTS_LENGTH = 3;
 
+	private static ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
+
 
 	private ArrayList<Integer> edges[] = new ArrayList<>()[MAX_GRAPH_NODES_SIZE];
 	private boolean nodesSet[] = new boolean[MAX_GRAPH_NODES_SIZE];
@@ -58,23 +60,37 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 			int execDest = Integer.parseInt(batchLine[2]);
 			//System.out.println("Before");
 			if(operation == 'Q') {
+
+				rwl.readLock.lock();
+
 				if(nodesSet[execSrc-1]==false || nodesSet[execDest-1]==false) {
 					addEdge(execSrc-1, execDest-1);
 					nodesSet[execSrc-1] = true;
 					nodesSet[execDest-1] = true;
 				}
 				int shortestPath = query(execSrc-1,execDest-1);
+
+				rwl.readLock.unlock();
+
 				if(shortestPath==0) {
 					outputList.add(-1);
 				} else {
 					outputList.add(shortestPath);
 				}
 			} else if (operation == 'A') {
+
+				rwl.writeLock.lock();
+
 				addEdge(execSrc-1, execDest-1);
 				nodesSet[execSrc-1] = true;
 				nodesSet[execDest-1] = true;
-				
+
+				rwl.writeLock.unlock();
+
 			} else if (operation == 'D') {
+
+				rwl.writeLock.lock();
+
 				deleteEdge(execSrc-1, execDest-1);
 				if(edges[execSrc-1].size()==0) {
 					nodesSet[execSrc-1] =false;
@@ -82,6 +98,9 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 				if(edges[execDest-1].size()==0) {
 					nodesSet[execDest-1] =false;
 				}
+
+				rwl.writeLock.unlock();
+
 			} else {
 				throw new UnsupportedOperationException("Unsupported query type: " + operation);
 			}
