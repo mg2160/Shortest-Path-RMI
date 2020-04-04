@@ -9,7 +9,8 @@ import java.util.Queue;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.HashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class GraphProcessing extends UnicastRemoteObject implements GraphProcessingI{
 
@@ -17,18 +18,16 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 
 	private static final int QUERY_ARGUMENTS_LENGTH = 3;
 
-	private static ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
+	private static Lock lck = new ReentrantLock();	
 
 
 	/**
-	 * A mapping of previously source node path to a hashmap taking destination as key and result value
+	 * A mapping of previously source node path to a HashMap taking destination as key and result value
 	 * Source -> < Destination -> Distance of shortest path >
 	 */
 	private static HashMap<Integer, HashMap<Integer, Integer>> dpMap = new HashMap<>();
-
-	private ArrayList<Integer>[] edges = new ArrayList[MAX_GRAPH_NODES_SIZE];
-	private boolean nodesSet[] = new boolean[MAX_GRAPH_NODES_SIZE];
-
+	private HashMap<Integer, HashSet<Integer>> edges = new HashMap<Integer, HashSet<Integer>>();
+	
 	protected GraphProcessing() throws RemoteException {
 		super();
 	}
@@ -36,28 +35,22 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 	
 	@Override
 	public void setGraph(LinkedList<String> graph) throws Exception {
-		for (int i = 0; i < edges.length; i++) { 
-            edges[i] = new ArrayList<>();
-        } 
-		for (Iterator iterator = graph.iterator(); iterator.hasNext();) {
-			String string = (String) iterator.next();
+
+		for (Iterator<String> iterator = graph.iterator(); iterator.hasNext();) {
+			String string = iterator.next();
 			String[] instruction = string.split(" ");
 			int source = Integer.parseInt(instruction[0]);
 			int destination = Integer.parseInt(instruction[1]);
 			addEdge(source-1, destination-1);
-			nodesSet[source-1]=true;
-			nodesSet[destination-1]=true;
 		}
+
 	}
 
 	@Override
 	public LinkedList<Integer> executeBatch(LinkedList<String> lines) throws Exception {
 		LinkedList<Integer> outputList = new LinkedList<Integer>();
-		//System.out.println("First element= " + lines.get(0));
-		//System.out.println("Outside for");
-		for (Iterator iterator = lines.iterator(); iterator.hasNext();) {
-			//System.out.println("Inside for");
-			String string = (String) iterator.next();
+		for (Iterator<String> iterator = lines.iterator(); iterator.hasNext();) {
+			String string = iterator.next();
 			String[] batchLine = string.split(" ");
 			if (batchLine.length != QUERY_ARGUMENTS_LENGTH) {
 				throw new IllegalArgumentException("Passed wrong format of input.\n" +
@@ -66,78 +59,26 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 			char operation = batchLine[0].charAt(0);
 			int execSrc = Integer.parseInt(batchLine[1]);
 			int execDest = Integer.parseInt(batchLine[2]);
-			//System.out.println("Before");
 			if(operation == 'Q') {
-
-
-
-				rwl.readLock().lock();
-
-
-
-				if(nodesSet[execSrc-1]==false || nodesSet[execDest-1]==false) {
-					addEdge(execSrc-1, execDest-1);
-					nodesSet[execSrc-1] = true;
-					nodesSet[execDest-1] = true;
-				}
-
+				
 				Integer dpResult = lookupDP(execSrc-1, execDest-1);
-
-				int shortestPath = dpResult == null ? shortestPath = query(execSrc-1,execDest-1) : dpResult;
-
-
-				rwl.readLock().unlock();
-
-
-				if(shortestPath==0) {
-					outputList.add(-1);
+				int shortestPath;
+				if(dpResult == null) {
+					lck.lock();
+					shortestPath = query(execSrc-1,execDest-1);
+					lck.unlock();
 				} else {
-					outputList.add(shortestPath);
+					shortestPath = dpResult;
 				}
+				outputList.add(shortestPath);
 			} else if (operation == 'A') {
-
-
-
-				rwl.writeLock().lock();
-
-
-
-				dpMap.clear();
-
+				lck.lock();
 				addEdge(execSrc-1, execDest-1);
-				nodesSet[execSrc-1] = true;
-				nodesSet[execDest-1] = true;
-
-
-
-				rwl.writeLock().unlock();
-
-
-
+				lck.lock();
 			} else if (operation == 'D') {
-
-
-
-				rwl.writeLock().lock();
-
-
-
-				dpMap.clear();
-
+				lck.lock();
 				deleteEdge(execSrc-1, execDest-1);
-				if(edges[execSrc-1].size()==0) {
-					nodesSet[execSrc-1] =false;
-				}
-				if(edges[execDest-1].size()==0) {
-					nodesSet[execDest-1] =false;
-				}
-
-
-
-				rwl.writeLock().unlock();
-
-
-
+				lck.lock();
 			} else {
 				throw new UnsupportedOperationException("Unsupported query type: " + operation);
 			}
@@ -147,61 +88,50 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 	
 
 	private int query(int src, int dest) {
-		int sp = minEdgeBFS(src, dest, edges.length);
+		int sp = minEdgeBFS(src, dest);
 		return sp;
 	}
 	
-	private void addEdge(int src, int dest) { 
-		edges[src].add(dest); 
+	private void addEdge(int src, int dest) {
+		if(!edges.containsKey(src))
+			edges.put(src, new HashSet<Integer>());
+		edges.get(src).add(dest);
+		clearDP();
 	}
 
 	private void deleteEdge(int src , int dest) {
-		int j=edges[src].indexOf(2);
-		edges[src].remove(j);
+		if(!edges.containsKey(src))
+			return;
+		HashSet<Integer> srcEdges = edges.get(src);
+		srcEdges.remove(dest);
+		clearDP();
 	}
 	
 	
-	private int minEdgeBFS( int u, int v, int n) { 
-		// visited[n] for keeping track of visited 
-		// node in BFS 
-		ArrayList<Boolean> visited = new ArrayList<Boolean>(n);
-
-		for (int i = 0; i < n; i++) {
-			visited.add(false); 
-		} 
-
+	private int minEdgeBFS( int u, int v) {
 		// Initialize distances as 0 
-		ArrayList<Integer> distance = new ArrayList<Integer>(n);
-
-		for (int i = 0; i < n; i++) { 
-			distance.add(0); 
-		} 
+		HashMap<Integer, Integer> distance = dpMap.getOrDefault(u, new HashMap<Integer, Integer>());
+		distance.put(u, 0);
 
 		// queue to do BFS. 
-		Queue<Integer> Q = new LinkedList<>();
-		distance.set(u, 0); 
+		Queue<Integer> Q = new LinkedList<>(distance.keySet());
 
-		Q.add(u); 
-		visited.set(u, true); 
-		while (!Q.isEmpty()) { 
-			int x = Q.peek(); 
-			Q.poll(); 
-
-			for (int i=0; i<edges[x].size(); i++) {
-				if (visited.get(edges[x].get(i))) 
-					continue; 
-
-				distance.set(edges[x].get(i), distance.get(x) + 1);// update distance for i
-
-				/* Memo in O(1) constant time */
-				memoResult(u, edges[x].get(i), distance.get(x) + 1);
-				memoResult(x, edges[x].get(i), 1);
-
-				Q.add(edges[x].get(i)); 
-				visited.set(edges[x].get(i), true); 
+		while (!Q.isEmpty()) {
+			int x = Q.peek();
+			Q.poll();
+			
+			for (Integer dest : edges.getOrDefault(x, new HashSet<Integer>())) {
+				if (distance.containsKey(dest)) 
+					continue;
+				
+				int newDist = distance.get(x) + 1;
+				distance.put(dest, newDist);// update distance for i
+				Q.add(dest); 
 			} 
 		}
-		return distance.get(v); 
+		// Keep for the future
+		memoResult(u, distance);
+		return distance.getOrDefault(v, -1);
 	} 
 
 
@@ -217,15 +147,11 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 	 */
 	private Integer lookupDP(int source, int destination) {
 		HashMap<Integer, Integer> resultMap = dpMap.get(source);
-		return resultMap != null ? resultMap.get(destination) : null;
+		return resultMap != null ? resultMap.getOrDefault(destination, null): null;
 	}
 
-	private void memoResult(int source, int destination, int result) {
-		HashMap<Integer, Integer> resultMap = dpMap.getOrDefault(source, new HashMap<>());
-
-		resultMap.put(destination, result);
-
-		dpMap.put(source, resultMap);
+	private void memoResult(int source, HashMap<Integer, Integer> result) {
+		dpMap.put(source, result);
 	}
 
 }
