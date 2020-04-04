@@ -26,7 +26,7 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 	 */
 	private static HashMap<Integer, HashMap<Integer, Integer>> dpMap = new HashMap<>();
 
-	private ArrayList<Integer> edges[] = new ArrayList<>()[MAX_GRAPH_NODES_SIZE];
+	private ArrayList<Integer>[] edges = new ArrayList[MAX_GRAPH_NODES_SIZE];
 	private boolean nodesSet[] = new boolean[MAX_GRAPH_NODES_SIZE];
 
 	protected GraphProcessing() throws RemoteException {
@@ -61,7 +61,7 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 			String[] batchLine = string.split(" ");
 			if (batchLine.length != QUERY_ARGUMENTS_LENGTH) {
 				throw new IllegalArgumentException("Passed wrong format of input.\n" +
-						"Length passed: " + batchLine.length " instead of: " + QUERY_ARGUMENTS_LENGTH);
+						"Length passed: " + batchLine.length + " instead of: " + QUERY_ARGUMENTS_LENGTH);
 			}
 			char operation = batchLine[0].charAt(0);
 			int execSrc = Integer.parseInt(batchLine[1]);
@@ -71,7 +71,7 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 
 
 
-				rwl.readLock.lock();
+				rwl.readLock().lock();
 
 
 
@@ -86,7 +86,7 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 				int shortestPath = dpResult == null ? shortestPath = query(execSrc-1,execDest-1) : dpResult;
 
 
-				rwl.readLock.unlock();
+				rwl.readLock().unlock();
 
 
 				if(shortestPath==0) {
@@ -98,7 +98,7 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 
 
 
-				rwl.writeLock.lock();
+				rwl.writeLock().lock();
 
 
 
@@ -110,7 +110,7 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 
 
 
-				rwl.writeLock.unlock();
+				rwl.writeLock().unlock();
 
 
 
@@ -118,7 +118,7 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 
 
 
-				rwl.writeLock.lock();
+				rwl.writeLock().lock();
 
 
 
@@ -134,7 +134,7 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 
 
 
-				rwl.writeLock.unlock();
+				rwl.writeLock().unlock();
 
 
 
@@ -166,39 +166,39 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 		// node in BFS 
 		ArrayList<Boolean> visited = new ArrayList<Boolean>(n);
 
-		for (int i = 0; i < n; i++) { 
-			visited.addElement(false); 
+		for (int i = 0; i < n; i++) {
+			visited.add(false); 
 		} 
 
 		// Initialize distances as 0 
 		ArrayList<Integer> distance = new ArrayList<Integer>(n);
 
 		for (int i = 0; i < n; i++) { 
-			distance.addElement(0); 
+			distance.add(0); 
 		} 
 
 		// queue to do BFS. 
-		Queue<Integer> Q = new LinkedList<>(); 
-		distance.setElementAt(0, u); 
+		Queue<Integer> Q = new LinkedList<>();
+		distance.set(u, 0); 
 
 		Q.add(u); 
-		visited.setElementAt(true, u); 
+		visited.set(u, true); 
 		while (!Q.isEmpty()) { 
 			int x = Q.peek(); 
 			Q.poll(); 
 
-			for (int i=0; i<edges[x].size(); i++) { 
-				if (visited.elementAt(edges[x].get(i))) 
+			for (int i=0; i<edges[x].size(); i++) {
+				if (visited.get(edges[x].get(i))) 
 					continue; 
 
-				distance.setElementAt(distance.get(x) + 1,edges[x].get(i));// update distance for i
+				distance.set(edges[x].get(i), distance.get(x) + 1);// update distance for i
 
 				/* Memo in O(1) constant time */
 				memoResult(u, edges[x].get(i), distance.get(x) + 1);
 				memoResult(x, edges[x].get(i), 1);
 
 				Q.add(edges[x].get(i)); 
-				visited.setElementAt(true,edges[x].get(i)); 
+				visited.set(edges[x].get(i), true); 
 			} 
 		}
 		return distance.get(v); 

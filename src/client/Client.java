@@ -10,7 +10,7 @@ import java.util.Scanner;
 
 public class Client {
 	public static void main(String[] args) throws Exception{
-		File file = new File("input.txt"); 
+		File file = new File("src" + java.io.File.separator + "input.txt"); 
 		Scanner sc=null;
 		try {
 			sc = new Scanner(file);
@@ -28,7 +28,7 @@ public class Client {
 			System.out.println(line);
 		}
 		
-		File batchFile = new File("batch.txt"); 
+		File batchFile = new File("src" + java.io.File.separator + "batch.txt"); 
 		Scanner sc2=null;
 		try {
 			sc2 = new Scanner(batchFile);
