@@ -4,20 +4,16 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.HashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class GraphProcessing extends UnicastRemoteObject implements GraphProcessingI{
-
-	private static final int MAX_GRAPH_NODES_SIZE = 5000;
+@SuppressWarnings("serial")
+public class GraphProcessing extends UnicastRemoteObject implements IGraphProcessing{
 
 	private static final int QUERY_ARGUMENTS_LENGTH = 3;
-
 	private static Lock lck = new ReentrantLock();	
 
 
@@ -39,7 +35,7 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 
 	
 	@Override
-	public void setGraph(LinkedList<String> graph) throws Exception {
+	public void setGraph(List<String> graph) throws Exception {
 
 		for (Iterator<String> iterator = graph.iterator(); iterator.hasNext();) {
 			String string = iterator.next();
@@ -52,8 +48,8 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 	}
 
 	@Override
-	public LinkedList<Integer> executeBatch(LinkedList<String> lines) throws Exception {
-		LinkedList<Integer> outputList = new LinkedList<Integer>();
+	public List<Integer> executeBatch(List<String> lines) throws Exception {
+		List<Integer> outputList = new LinkedList<Integer>();
 		for (Iterator<String> iterator = lines.iterator(); iterator.hasNext();) {
 			String string = iterator.next();
 			String[] batchLine = string.split(" ");
