@@ -12,6 +12,7 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.List;
 import java.util.Random;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Scanner;
 
@@ -51,6 +52,7 @@ public class Client extends Thread{
 			e.printStackTrace();
 		}
 		double initialTime = System.nanoTime();
+		List<Integer> results = new ArrayList<Integer>();
 		while (sc2.hasNext()) {
 			List<String> batch = new LinkedList<String>();
 			String batchLine = sc2.nextLine();
@@ -61,6 +63,7 @@ public class Client extends Thread{
 			try {
 				long startTime = System.nanoTime();
 				List<Integer> result = obj.executeBatch(batch);
+				results.addAll(result);
 				double requestTime = (System.nanoTime() - startTime) / 1000000.0;
 				this.writeTofile(batchLine, result, requestTime, false);
 //				Thread.sleep(new Random().nextInt(10001));
@@ -75,6 +78,7 @@ public class Client extends Thread{
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		System.out.println("Client " + this.clientId + " shortest paths = " + results.toString());
 		System.out.println("Client " + this.clientId + " has finished executing!");
 	}
 	

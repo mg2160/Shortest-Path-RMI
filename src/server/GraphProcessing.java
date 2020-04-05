@@ -116,7 +116,6 @@ public class GraphProcessing extends UnicastRemoteObject implements IGraphProces
 	
 	
 	private int minEdgeBFS( int u, int v) {
-		// Initialize distances as 0 
 		HashMap<Integer, Integer> distance = dpMap.getOrDefault(u, new HashMap<Integer, Integer>());
 		distance.put(u, 0);
 
@@ -132,7 +131,10 @@ public class GraphProcessing extends UnicastRemoteObject implements IGraphProces
 					continue;
 				
 				int newDist = distance.get(x) + 1;
-				distance.put(dest, newDist);// update distance for dest
+				distance.put(dest, newDist); // update distance for dest
+		
+				if(newDist == v)
+					break; // no need to compute the rest of BFS since it may be invalidated soon.
 				Q.add(dest); 
 			} 
 		}

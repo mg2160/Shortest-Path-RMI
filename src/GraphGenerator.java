@@ -13,9 +13,9 @@ public class GraphGenerator {
 	public static void main(String[] args) throws IOException {
 		new File("input").mkdir();
 		// TODO Auto-generated method stub
-		int n = 5000;
+		int n = args.length > 1? Integer.parseInt(args[1]): 1000;
 		Writer fw = new PrintWriter("input" + java.io.File.separator + "graph.txt");
-		int m = n * 10;
+		int m = args.length > 2? Integer.parseInt(args[2]): n * 10;
 		int src[] = new int[m];
 		int dst[] = new int[m];
 		for(int i =0;i<m;i++) {
@@ -34,7 +34,7 @@ public class GraphGenerator {
 		fw.write("S");
 		fw.flush();
 		fw.close();
-		for(int z = 0;z<15;z++) {
+		for(int z = 0; z < (args.length > 0 ? Integer.parseInt(args[0]): Start.CLIENTS_COUNT); z++) {
 			fw = new PrintWriter("input" + java.io.File.separator + "batch" + z + ".txt");
 			List<Character> op = new ArrayList<Character>();
 			List<Integer> srcQ = new ArrayList<Integer>();
