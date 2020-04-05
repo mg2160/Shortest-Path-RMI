@@ -3,7 +3,6 @@ import server.IGraphProcessing;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
@@ -25,8 +24,7 @@ public class Client extends Thread{
 		this.serverUrl = serverUrl;
 		try {
 			new File("logs").mkdir();
-			FileWriter fw = new FileWriter("logs/log" + clientId + ".txt", true);
-			this.writer = new PrintWriter(fw);
+			this.writer = new PrintWriter("logs/log" + clientId + ".txt");
 		} catch (IOException e) {
 			e.printStackTrace();
 			writer = null;
@@ -88,7 +86,8 @@ public class Client extends Thread{
 		String logLine = "timestamp=" + System.nanoTime();
 		logLine += isBatch? ", operation=B": ", operation=" + batch[0];
 		logLine += isBatch? ", src=-1": ", src=" + batch[1];
-		logLine += isBatch? ", dest=-1": ", dest=" + batch[1];
+		logLine += isBatch? ", dest=-1": ", dest=" + batch[2];
+		logLine += isBatch? ", result=-1": ", result=" + results.get(0); 
 		logLine += ", latency=" + time + "\n";
 		try {
 			writer.append(logLine);

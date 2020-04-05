@@ -35,16 +35,13 @@ public class GraphProcessing extends UnicastRemoteObject implements IGraphProces
         this.memo = memo;
         try {
 			new File("logs").mkdir();
-			this.writer = new PrintWriter("logs/server-log");
+			this.writer = new PrintWriter("logs/server-log" + (memo? "-memo": "") + ".txt");
 		} catch (IOException e) {
 			e.printStackTrace();
 			writer = null;
-		}
-        
+		}   
     }
 
-
-	
 	@Override
 	public void setGraph(List<String> graph) throws Exception {
 
@@ -55,7 +52,6 @@ public class GraphProcessing extends UnicastRemoteObject implements IGraphProces
 			int destination = Integer.parseInt(instruction[1]);
 			addEdge(source, destination);
 		}
-
 	}
 
 	@Override
@@ -71,8 +67,10 @@ public class GraphProcessing extends UnicastRemoteObject implements IGraphProces
 			char operation = batchLine[0].charAt(0);
 			int execSrc = Integer.parseInt(batchLine[1]);
 			int execDest = Integer.parseInt(batchLine[2]);
+			Integer shortestPath = null;
+			long startTime = System.nanoTime();
 			if(operation == 'Q') {
-				Integer shortestPath = this.memo? lookupDP(execSrc, execDest): null;
+				shortestPath = this.memo? lookupDP(execSrc, execDest): null;
 				if(shortestPath == null) {
 					lck.lock();
 					shortestPath = query(execSrc,execDest);
@@ -90,6 +88,7 @@ public class GraphProcessing extends UnicastRemoteObject implements IGraphProces
 			} else {
 				throw new UnsupportedOperationException("Unsupported query type: " + operation);
 			}
+			this.writeTofile(string, shortestPath == null? -1: shortestPath, (System.nanoTime()-startTime)/ 1000000.0);
 		}
 		return outputList;
 	}
@@ -162,15 +161,13 @@ public class GraphProcessing extends UnicastRemoteObject implements IGraphProces
 		dpMap.put(source, result);
 	}
 	
-	private void writeTofile(String batchLine, List<Integer> results, double time) {
-		if(results != null && results.isEmpty())
-			results.add(-1);
-
+	private void writeTofile(String batchLine, Integer result, double time) {
 		String[] batch = batchLine.split(" ");
 		String logLine = "timestamp=" + System.nanoTime();
 		logLine += ", operation=" + batch[0];
 		logLine += ", src=" + batch[1];
-		logLine += ", dest=" + batch[1];
+		logLine += ", dest=" + batch[2];
+		logLine += ", result=" + result;
 		logLine += ", latency=" + time + "\n";
 		try {
 			writer.append(logLine);
