@@ -1,4 +1,8 @@
 package server;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Writer;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Iterator;
@@ -14,22 +18,29 @@ import java.util.concurrent.locks.ReentrantLock;
 public class GraphProcessing extends UnicastRemoteObject implements IGraphProcessing{
 
 	private static final int QUERY_ARGUMENTS_LENGTH = 3;
-	private static Lock lck = new ReentrantLock();	
+	private Lock lck = new ReentrantLock();
+	private boolean memo;
+	private Writer writer;
 
 
 	/**
 	 * A mapping of previously source node path to a HashMap taking destination as key and result value
 	 * Source -> < Destination -> Distance of shortest path >
 	 */
-	private static HashMap<Integer, HashMap<Integer, Integer>> dpMap = new HashMap<>();
+	private HashMap<Integer, HashMap<Integer, Integer>> dpMap = new HashMap<>();
 	private HashMap<Integer, HashSet<Integer>> edges = new HashMap<Integer, HashSet<Integer>>();
 	
-	protected GraphProcessing() throws RemoteException {
-		super();
-	}
-	
-	public GraphProcessing(int port) throws RemoteException {
+	public GraphProcessing(int port, boolean memo) throws RemoteException {
         super(port);
+        this.memo = memo;
+        try {
+			new File("logs").mkdir();
+			this.writer = new PrintWriter("logs/server-log");
+		} catch (IOException e) {
+			e.printStackTrace();
+			writer = null;
+		}
+        
     }
 
 
@@ -42,7 +53,7 @@ public class GraphProcessing extends UnicastRemoteObject implements IGraphProces
 			String[] instruction = string.split(" ");
 			int source = Integer.parseInt(instruction[0]);
 			int destination = Integer.parseInt(instruction[1]);
-			addEdge(source-1, destination-1);
+			addEdge(source, destination);
 		}
 
 	}
@@ -61,24 +72,20 @@ public class GraphProcessing extends UnicastRemoteObject implements IGraphProces
 			int execSrc = Integer.parseInt(batchLine[1]);
 			int execDest = Integer.parseInt(batchLine[2]);
 			if(operation == 'Q') {
-				
-				Integer dpResult = lookupDP(execSrc-1, execDest-1);
-				int shortestPath;
-				if(dpResult == null) {
+				Integer shortestPath = this.memo? lookupDP(execSrc, execDest): null;
+				if(shortestPath == null) {
 					lck.lock();
-					shortestPath = query(execSrc-1,execDest-1);
+					shortestPath = query(execSrc,execDest);
 					lck.unlock();
-				} else {
-					shortestPath = dpResult;
 				}
 				outputList.add(shortestPath);
 			} else if (operation == 'A') {
 				lck.lock();
-				addEdge(execSrc-1, execDest-1);
+				addEdge(execSrc, execDest);
 				lck.unlock();
 			} else if (operation == 'D') {
 				lck.lock();
-				deleteEdge(execSrc-1, execDest-1);
+				deleteEdge(execSrc, execDest);
 				lck.unlock();
 			} else {
 				throw new UnsupportedOperationException("Unsupported query type: " + operation);
@@ -126,7 +133,7 @@ public class GraphProcessing extends UnicastRemoteObject implements IGraphProces
 					continue;
 				
 				int newDist = distance.get(x) + 1;
-				distance.put(dest, newDist);// update distance for i
+				distance.put(dest, newDist);// update distance for dest
 				Q.add(dest); 
 			} 
 		}
@@ -153,6 +160,24 @@ public class GraphProcessing extends UnicastRemoteObject implements IGraphProces
 
 	private void memoResult(int source, HashMap<Integer, Integer> result) {
 		dpMap.put(source, result);
+	}
+	
+	private void writeTofile(String batchLine, List<Integer> results, double time) {
+		if(results != null && results.isEmpty())
+			results.add(-1);
+
+		String[] batch = batchLine.split(" ");
+		String logLine = "timestamp=" + System.nanoTime();
+		logLine += ", operation=" + batch[0];
+		logLine += ", src=" + batch[1];
+		logLine += ", dest=" + batch[1];
+		logLine += ", latency=" + time + "\n";
+		try {
+			writer.append(logLine);
+			writer.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

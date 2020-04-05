@@ -18,7 +18,7 @@ public class Server {
 	}
 	
 	public void run() throws Exception{
-		IGraphProcessing obj = new GraphProcessing(objPort);
+		IGraphProcessing obj = new GraphProcessing(objPort, true);
         System.out.println("impl = " + obj);
         Registry reg = LocateRegistry.createRegistry(regPort);
         Naming.rebind(url, obj);
@@ -29,13 +29,13 @@ public class Server {
         	System.out.println("Failed to setup initial graph.");
         	return;
         }
-        System.out.println("System is running!");
+        System.out.println("R");
         return;
 	}
 	
 	private boolean setInitialGraph(IGraphProcessing obj) {
 		File file = new File("input.txt");
-		Scanner sc=null;
+		Scanner sc = null;
 		try {
 			sc = new Scanner(file);
 		} catch (FileNotFoundException e) {

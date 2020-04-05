@@ -3,6 +3,7 @@ import server.IGraphProcessing;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
@@ -11,18 +12,22 @@ import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.List;
+import java.util.Random;
 import java.util.LinkedList;
 import java.util.Scanner;
 
 public class Client extends Thread{
 	private String clientId;
 	private Writer writer;
-	public Client(String clientId) {
+	private String serverUrl;
+	public Client(String clientId, String serverUrl) {
 		this.clientId = clientId;
+		this.serverUrl = serverUrl;
 		try {
 			new File("logs").mkdir();
-			this.writer = new PrintWriter("logs/log" + clientId + ".txt");
-		} catch (FileNotFoundException e) {
+			FileWriter fw = new FileWriter("logs/log" + clientId + ".txt", true);
+			this.writer = new PrintWriter(fw);
+		} catch (IOException e) {
 			e.printStackTrace();
 			writer = null;
 		}
@@ -39,7 +44,7 @@ public class Client extends Thread{
 		
 		IGraphProcessing obj = null;
 		try {
-			obj = (IGraphProcessing)Naming.lookup("rmi://localhost/sp");
+			obj = (IGraphProcessing)Naming.lookup(serverUrl);
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		} catch (RemoteException e) {
@@ -47,7 +52,7 @@ public class Client extends Thread{
 		} catch (NotBoundException e) {
 			e.printStackTrace();
 		}
-		
+		double initialTime = System.nanoTime();
 		while (sc2.hasNext()) {
 			List<String> batch = new LinkedList<String>();
 			String batchLine = sc2.nextLine();
@@ -58,27 +63,33 @@ public class Client extends Thread{
 			try {
 				long startTime = System.nanoTime();
 				List<Integer> result = obj.executeBatch(batch);
-				long endTime = System.nanoTime();
-				this.writeTofile(batchLine, result, (endTime - startTime) / 1000000.0);
+				double requestTime = (System.nanoTime() - startTime) / 1000000.0;
+				this.writeTofile(batchLine, result, requestTime, false);
+				Thread.sleep(new Random().nextInt(10001));
 			} catch (Exception e) {
 				System.out.println("Failed to execute request: " + batchLine);
 				e.printStackTrace();
 			}
 		}
-		
+		this.writeTofile("", null, (System.nanoTime() - initialTime) / 1000000.0, true);
 		try {
 			this.writer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		System.out.println("Client " + this.clientId + " has finished executing!");
 	}
 	
-	private void writeTofile(String batchLine, List<Integer> results, double time) {
-		if(results.isEmpty())
+	private void writeTofile(String batchLine, List<Integer> results, double time, boolean isBatch) {
+		if(results != null && results.isEmpty())
 			results.add(-1);
-		String logLine = "";
+
 		String[] batch = batchLine.split(" ");
-		logLine += "operation=" + batch[0] + ", src=" + batch[1] + ", dest=" + batch[2] + ", result=" + results.get(0) + ", time=" + time + "\n";
+		String logLine = "timestamp=" + System.nanoTime();
+		logLine += isBatch? ", operation=B": ", operation=" + batch[0];
+		logLine += isBatch? ", src=-1": ", src=" + batch[1];
+		logLine += isBatch? ", dest=-1": ", dest=" + batch[1];
+		logLine += ", latency=" + time + "\n";
 		try {
 			writer.append(logLine);
 			writer.flush();
