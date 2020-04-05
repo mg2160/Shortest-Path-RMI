@@ -31,6 +31,11 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 	protected GraphProcessing() throws RemoteException {
 		super();
 	}
+	
+	public GraphProcessing(int port) throws RemoteException {
+        super(port);
+    }
+
 
 	
 	@Override
@@ -74,11 +79,11 @@ public class GraphProcessing extends UnicastRemoteObject implements GraphProcess
 			} else if (operation == 'A') {
 				lck.lock();
 				addEdge(execSrc-1, execDest-1);
-				lck.lock();
+				lck.unlock();
 			} else if (operation == 'D') {
 				lck.lock();
 				deleteEdge(execSrc-1, execDest-1);
-				lck.lock();
+				lck.unlock();
 			} else {
 				throw new UnsupportedOperationException("Unsupported query type: " + operation);
 			}
