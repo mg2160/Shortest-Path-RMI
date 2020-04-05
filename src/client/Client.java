@@ -32,7 +32,7 @@ public class Client extends Thread{
 	}
 
 	public void run(){
-		File batchFile = new File("batch" + clientId + ".txt"); 
+		File batchFile = new File("input" + java.io.File.separator + "batch" + clientId + ".txt"); 
 		Scanner sc2=null;
 		try {
 			sc2 = new Scanner(batchFile);
@@ -63,7 +63,7 @@ public class Client extends Thread{
 				List<Integer> result = obj.executeBatch(batch);
 				double requestTime = (System.nanoTime() - startTime) / 1000000.0;
 				this.writeTofile(batchLine, result, requestTime, false);
-				Thread.sleep(new Random().nextInt(10001));
+//				Thread.sleep(new Random().nextInt(10001));
 			} catch (Exception e) {
 				System.out.println("Failed to execute request: " + batchLine);
 				e.printStackTrace();

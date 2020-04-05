@@ -10,15 +10,17 @@ public class Server {
 	private int regPort;
 	private int objPort;
 	private String url;
+	private boolean memo;
 	
-	public Server(int regPort, int objPort, String serverUrl) {
+	public Server(int regPort, int objPort, String serverUrl, boolean memo) {
 		this.regPort = regPort;
 		this.objPort = objPort;
 		this.url = serverUrl;
+		this.memo = memo;
 	}
 	
 	public void run() throws Exception{
-		IGraphProcessing obj = new GraphProcessing(objPort, true);
+		IGraphProcessing obj = new GraphProcessing(objPort, memo);
         System.out.println("impl = " + obj);
         Registry reg = LocateRegistry.createRegistry(regPort);
         Naming.rebind(url, obj);
@@ -34,7 +36,7 @@ public class Server {
 	}
 	
 	private boolean setInitialGraph(IGraphProcessing obj) {
-		File file = new File("input.txt");
+		File file = new File("input" + java.io.File.separator + "graph.txt");
 		Scanner sc = null;
 		try {
 			sc = new Scanner(file);

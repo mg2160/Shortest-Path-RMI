@@ -7,7 +7,7 @@ import java.util.Properties;
 import client.*;
 
 public class Start {
-	private static int CLIENTS_COUNT = 3;
+	private static int CLIENTS_COUNT = 15;
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
 		Properties prop = new Properties();
@@ -16,9 +16,11 @@ public class Start {
 		Server s = new Server(
 			Integer.parseInt(prop.get("GSP.rmiregistry.port").toString()),
 			Integer.parseInt(prop.get("GSP.server.objPort").toString()),
-			serverUrl
+			serverUrl,
+			false
 		);
 		s.run();
+		long startTime = System.currentTimeMillis();
 		Client clients[] = new Client[CLIENTS_COUNT];
 		for(int i=0; i<CLIENTS_COUNT; i++){
 		      clients[i] = new Client(new Integer(i).toString(), serverUrl);
@@ -27,6 +29,7 @@ public class Start {
 		for(int i =0;i<CLIENTS_COUNT;i++) {
 			clients[i].join();
 		}
+		System.out.println("Processing Time: " + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 		Naming.unbind(serverUrl);
 		return;
 	}
