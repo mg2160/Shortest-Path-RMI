@@ -17,19 +17,24 @@ public class Start {
 			Integer.parseInt(prop.get("GSP.rmiregistry.port").toString()),
 			Integer.parseInt(prop.get("GSP.server.objPort").toString()),
 			serverUrl,
-			args.length > 1? args[1].equals("memo"): false
+			args.length > 2? args[2].equals("memo"): false
 		);
+		int waitingTime = args.length > 1? Integer.parseInt(args[1]): 0;
+		double totalAverageTime = 0;
+		
 		s.run();
 		long startTime = System.currentTimeMillis();
 		Client clients[] = new Client[clientsCount];
 		for(int i=0; i<clientsCount; i++){
-		      clients[i] = new Client(new Integer(i).toString(), serverUrl);
+		      clients[i] = new Client(new Integer(i).toString(), serverUrl, waitingTime);
 		      clients[i].start();
 		}
 		for(int i =0;i<clientsCount;i++) {
 			clients[i].join();
+			totalAverageTime += clients[i].averageTime;
 		}
 		System.out.println("Processing Time: " + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
+		System.out.println("Average client time: " + totalAverageTime/clientsCount);
 		Naming.unbind(serverUrl);
 		return;
 	}

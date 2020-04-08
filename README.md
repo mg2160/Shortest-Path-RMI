@@ -2,7 +2,7 @@
 Create the graph files and batches by running:
 
 ```
-java -jar GraphGenerator.jar [<clientsCount> <nodesCount> <edgesCount>]
+java -jar GraphGenerator.jar [<clientsCount> <RW_Ration> <nodesCount> <edgesCount>]
 ```
 
 Start the RMI Server-Client by running:

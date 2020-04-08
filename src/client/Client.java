@@ -20,9 +20,12 @@ public class Client extends Thread{
 	private String clientId;
 	private Writer writer;
 	private String serverUrl;
-	public Client(String clientId, String serverUrl) {
+	public double averageTime;
+	private int waitingTime;
+	public Client(String clientId, String serverUrl, int waitingTime) {
 		this.clientId = clientId;
 		this.serverUrl = serverUrl;
+		this.waitingTime = waitingTime + 1;
 		try {
 			new File("logs").mkdir();
 			this.writer = new PrintWriter("logs/log" + clientId + ".txt");
@@ -32,7 +35,7 @@ public class Client extends Thread{
 		}
 	}
 
-	public void run(){
+	public void run() {
 		File batchFile = new File("input" + java.io.File.separator + "batch" + clientId + ".txt"); 
 		Scanner sc2=null;
 		try {
@@ -53,7 +56,10 @@ public class Client extends Thread{
 		}
 		double initialTime = System.nanoTime();
 		List<Integer> results = new ArrayList<Integer>();
+		double totalTime = 0;
+		int requests =0;
 		while (sc2.hasNext()) {
+			requests++;
 			List<String> batch = new LinkedList<String>();
 			String batchLine = sc2.nextLine();
 			if(batchLine.equals("F")) {
@@ -63,10 +69,12 @@ public class Client extends Thread{
 			try {
 				long startTime = System.nanoTime();
 				List<Integer> result = obj.executeBatch(batch);
-				results.addAll(result);
 				double requestTime = (System.nanoTime() - startTime) / 1000000.0;
+				totalTime += requestTime;
+				results.addAll(result);
 				this.writeTofile(batchLine, result, requestTime, false);
-//				Thread.sleep(new Random().nextInt(10001));
+				if(this.waitingTime != 1)
+					Thread.sleep(new Random().nextInt(this.waitingTime));
 			} catch (Exception e) {
 				System.out.println("Failed to execute request: " + batchLine);
 				e.printStackTrace();
@@ -80,6 +88,7 @@ public class Client extends Thread{
 		}
 		System.out.println("Client " + this.clientId + " shortest paths = " + results.toString());
 		System.out.println("Client " + this.clientId + " has finished executing!");
+		this.averageTime = totalTime / requests;
 	}
 	
 	private void writeTofile(String batchLine, List<Integer> results, double time, boolean isBatch) {
